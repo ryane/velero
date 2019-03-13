@@ -33,6 +33,8 @@ import (
 func NewCommand(f client.Factory) *cobra.Command {
 	logger := veleroplugin.NewLogger()
 
+	var resticRestoreHelperImage string
+
 	c := &cobra.Command{
 		Use:    "run-plugins",
 		Hidden: true,
@@ -52,12 +54,14 @@ func NewCommand(f client.Factory) *cobra.Command {
 				RegisterBackupItemAction("serviceaccount", newServiceAccountBackupItemAction(f)).
 				RegisterRestoreItemAction("job", newJobRestoreItemAction).
 				RegisterRestoreItemAction("pod", newPodRestoreItemAction).
-				RegisterRestoreItemAction("restic", newResticRestoreItemAction).
+				RegisterRestoreItemAction("restic", newResticRestoreItemAction(resticRestoreHelperImage)).
 				RegisterRestoreItemAction("service", newServiceRestoreItemAction).
 				RegisterRestoreItemAction("serviceaccount", newServiceAccountRestoreItemAction).
 				Serve()
 		},
 	}
+
+	c.Flags().StringVar(&resticRestoreHelperImage, "restic-restore-helper-image", "", "the docker image for the velero restic restore helper")
 
 	return c
 }
@@ -127,8 +131,10 @@ func newPodRestoreItemAction(logger logrus.FieldLogger) (interface{}, error) {
 	return restore.NewPodAction(logger), nil
 }
 
-func newResticRestoreItemAction(logger logrus.FieldLogger) (interface{}, error) {
-	return restore.NewResticRestoreAction(logger), nil
+func newResticRestoreItemAction(initContainerImage string) veleroplugin.HandlerInitializer {
+	return func(logger logrus.FieldLogger) (interface{}, error) {
+		return restore.NewResticRestoreAction(logger, initContainerImage), nil
+	}
 }
 
 func newServiceRestoreItemAction(logger logrus.FieldLogger) (interface{}, error) {

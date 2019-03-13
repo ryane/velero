@@ -35,10 +35,14 @@ type resticRestoreAction struct {
 	initContainerImage string
 }
 
-func NewResticRestoreAction(logger logrus.FieldLogger) ItemAction {
+func NewResticRestoreAction(logger logrus.FieldLogger, initContainerImageName string) ItemAction {
+	if initContainerImageName == "" {
+		initContainerImageName = initContainerImage()
+	}
+
 	return &resticRestoreAction{
 		logger:             logger,
-		initContainerImage: initContainerImage(),
+		initContainerImage: initContainerImageName,
 	}
 }
 
@@ -59,7 +63,7 @@ func (a *resticRestoreAction) AppliesTo() (ResourceSelector, error) {
 }
 
 func (a *resticRestoreAction) Execute(input *RestoreItemActionExecuteInput) (*RestoreItemActionExecuteOutput, error) {
-	a.logger.Info("Executing resticRestoreAction")
+	a.logger.Infof("Executing resticRestoreAction using image %q", a.initContainerImage)
 	defer a.logger.Info("Done executing resticRestoreAction")
 
 	var pod corev1.Pod
